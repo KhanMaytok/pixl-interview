@@ -73,5 +73,27 @@ export const messages = new Elysia({
       messageId: t.String(),
       userId: t.String()
     })
+  }).put("/edit", async ({ body }) => {
+    const { messageId, content, userId } = body;
+
+    try {
+      await messageService.editMessage(Number(messageId), content, Number(userId));
+    } catch (error) {
+      console.error("Error editing message:", error);
+      return {
+        success: false,
+        error: "Failed to edit message"
+      };
+    }
+
+    return {
+      success: true
+    };
+  }, {
+    body: t.Object({
+      messageId: t.String(),
+      content: t.String(),
+      userId: t.String()
+    })
   });
 

@@ -1,17 +1,27 @@
 'use client';
 
-import { Edit, Send, Trash } from 'lucide-react';
+import { Edit, MoreVertical, Send, Trash, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { useChatContext } from '~/contexts/ChatContext';
 import type { Message } from '~/types/contact';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import { wsManager } from '~/lib/websocket';
+import { Textarea } from '~/components/ui/textarea';
 
 export function ChatArea() {
 	const { sendMessage, senderId, receiver, messages, deleteMessage } = useChatContext();
 	const [message, setMessage] = useState('');
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+	const [editingMessageText, setEditingMessageText] = useState('');
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,6 +36,19 @@ export function ChatArea() {
 		if (!message.trim() || !receiver) return;
 		sendMessage(message.trim(), receiver.userId);
 		setMessage('');
+	};
+
+	const handleEditMessage = (msg: Message) => {
+		setEditingMessageId(Number(msg.id));
+		setEditingMessageText(msg.message);
+	};
+
+	const handleSaveEdit = () => {
+		if (editingMessageId && receiver) {
+			wsManager.editMessage(editingMessageId, editingMessageText, receiver.userId);
+			setEditingMessageId(null);
+			setEditingMessageText('');
+		}
 	};
 
 	if (!receiver) {
@@ -72,37 +95,99 @@ export function ChatArea() {
 
 							// Es un mensaje de chat normal
 							const chatMsg = msg as Message;
+							const isEditing = editingMessageId === Number(chatMsg.id);
 							return (
 								<div
 									key={ chatMsg.id }
-									className={ `flex group flex-col space-y-2 ${chatMsg.sender === senderId ? 'items-end' : 'items-start'}` }
+									className={ `flex group flex-row items-center space-y-2 ${chatMsg.sender === senderId ? 'justify-end' : 'justify-start'}` }
 								>
-
-									<div
-										className={ `max-w-[70%] p-3 rounded-lg ${chatMsg.sender === senderId
-											? 'bg-blue-500 text-white'
-											: 'bg-white text-gray-800'
-											}` }
-									>
-										<p>{ chatMsg.message }</p>
-										<span
-											className={ `text-xs ${chatMsg.sender === senderId ? 'text-blue-100' : 'text-gray-500'
-												} block text-right mt-1` }
+									{ isEditing ? (
+										<div className="flex items-center gap-2">
+											<Input
+												value={ editingMessageText }
+												onChange={ e => setEditingMessageText(e.target.value) }
+												onKeyDown={ e => {
+													if (e.key === 'Enter') {
+														handleSaveEdit();
+													}
+												} }
+											/>
+											<Button onClick={ handleSaveEdit } disabled={ !editingMessageText.trim() }>
+												Save
+											</Button>
+										</div>
+									) : (
+										<div
+											className={ `max-w-[70%] p-3 rounded-lg ${chatMsg.sender === senderId
+												? 'bg-blue-500 text-white'
+												: 'bg-white text-gray-800'
+												}` }
 										>
-											{ new Date(chatMsg.timestamp).toLocaleTimeString([], {
-												hour: '2-digit',
-												minute: '2-digit',
-											}) }
-										</span>
-									</div>
-									{ chatMsg.sender === senderId && <div className='flex-1 gap-2 group-hover:opacity-100 opacity-0 transition-all duration-300 h-0 group-hover:h-auto hidden group-hover:flex'>
-										<Button className='cursor-pointer flex items-center gap-2 bg-red-100/15 border-red-200' variant='outline' size='icon' onClick={ () => deleteMessage(chatMsg.id) }>
-											<Trash className='text-red-500' />
-										</Button>
-										<Button className='cursor-pointer flex items-center gap-2' variant='outline' size='icon'>
-											<Edit />
-										</Button>
-									</div> }
+											<p>{ chatMsg.message }</p>
+											<div className="flex items-center justify-end gap-2 mt-1">
+												{ chatMsg.edited && (
+													<span className={ `text-xs ${chatMsg.sender === senderId ? 'text-blue-100' : 'text-gray-500'}` }>
+														(edited)
+													</span>
+												) }
+												<span
+													className={ `text-xs ${chatMsg.sender === senderId ? 'text-blue-100' : 'text-gray-500'
+														}` }
+												>
+													{ new Date(chatMsg.timestamp).toLocaleTimeString([], {
+														hour: '2-digit',
+														minute: '2-digit',
+													}) }
+												</span>
+											</div>
+										</div>
+									) }
+									{ chatMsg.sender === senderId && (
+
+										<div className='relative'>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														className="h-8 w-8 p-0"
+														size="icon"
+													>
+														<MoreVertical className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													{
+														isEditing ? (
+															<DropdownMenuItem
+																onClick={ () => setEditingMessageId(null) }
+																className="cursor-pointer"
+															>
+																<X className="mr-2 h-4 w-4" />
+																<span>Cancel</span>
+															</DropdownMenuItem>
+														) : (
+															<>
+																<DropdownMenuItem
+																	onClick={ () => handleEditMessage(chatMsg) }
+																	className="cursor-pointer"
+																>
+																	<Edit className="mr-2 h-4 w-4" />
+																	<span>Edit</span>
+																</DropdownMenuItem>
+
+																<DropdownMenuItem
+																	onClick={ () => deleteMessage(chatMsg.id) }
+																	className="cursor-pointer text-red-600"
+																>
+																	<Trash className="mr-2 h-4 w-4" />
+																	<span>Delete</span>
+																</DropdownMenuItem>
+															</>
+														) }
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+									) }
 								</div>
 							);
 						}) }
@@ -110,9 +195,10 @@ export function ChatArea() {
 					</div>
 				) }
 			</div>
-			<div className='p-4 border-t bg-white'>
-				<div className='flex items-center'>
-					<Input
+			<div className='p-4 border-t bg-white h-1/9'>
+				<div className='flex h-full items-start'>
+					<Textarea
+						className='w-full h-full'
 						placeholder='Type a message...'
 						value={ message }
 						onChange={ e => setMessage(e.target.value) }

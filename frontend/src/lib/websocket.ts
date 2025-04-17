@@ -1,24 +1,39 @@
-
 import type { EdenWS } from '@elysiajs/eden/treaty';
 import { client } from '~/api/client';
 
-type MessageHandler = (data: any) => void;
+type MessageHandler = (data: {
+  type: string;
+  message: string;
+  timestamp: string;
+  id?: string;
+  sender?: number;
+}) => void;
+
+interface WSResponse {
+  sender?: number;
+  id?: number;
+  message: string;
+  type: string;
+  timestamp: number;
+}
+
+interface WSMessage {
+  message: string;
+  receiver: number;
+  type?: 'chat' | 'edit';
+  messageId?: string;
+}
 
 class WebSocketManager {
   private static instance: WebSocketManager;
   private subscription: EdenWS<{
-    body: {
-      message: string;
-      receiver: number;
-    };
-    // biome-ignore lint/complexity/noBannedTypes: <explanation>
-    params: {};
+    body: WSMessage;
+    params: Record<string, never>;
     query: {
       userId: number | null;
     };
-    headers: unknown;
-    // biome-ignore lint/complexity/noBannedTypes: <explanation>
-    response: {};
+    headers: Record<string, unknown>;
+    response: WSResponse;
   }> | null = null;
   private messageHandlers: Set<MessageHandler> = new Set();
   private userId: number | null = null;
@@ -51,8 +66,9 @@ class WebSocketManager {
         },
       });
 
-      this.subscription.subscribe((msg: unknown) => {
+      this.subscription?.subscribe((msg: unknown) => {
         console.log('WebSocket message received:', msg);
+        // @ts-ignore
         // biome-ignore lint/complexity/noForEach: <explanation>
         this.messageHandlers.forEach(handler => handler(msg.data));
       });
@@ -93,6 +109,24 @@ class WebSocketManager {
       });
     } catch (error) {
       console.error('Error sending message:', error);
+    }
+  }
+
+  public editMessage(messageId: number, newContent: string, receiver: number) {
+    if (!this.subscription) {
+      console.error('WebSocket not connected');
+      return;
+    }
+
+    try {
+      this.subscription.send({
+        type: 'edit',
+        messageId,
+        message: newContent,
+        receiver,
+      });
+    } catch (error) {
+      console.error('Error editing message:', error);
     }
   }
 }

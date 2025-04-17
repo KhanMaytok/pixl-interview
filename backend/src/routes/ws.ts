@@ -6,6 +6,8 @@ export const ws = new Elysia({
 })
   .ws('/chat', {
     body: t.Object({
+      type: t.Optional(t.String()),
+      messageId: t.Optional(t.Number()),
       message: t.String(),
       receiver: t.Number()
     }),
@@ -16,6 +18,7 @@ export const ws = new Elysia({
       type: t.String(),
       sender: t.Optional(t.Number()),
       message: t.String(),
+      messageId: t.Optional(t.Number()),
       id: t.Optional(t.Number()),
       timestamp: t.Number()
     }),
@@ -29,26 +32,45 @@ export const ws = new Elysia({
         timestamp: Date.now()
       });
     },
-    message: async (ws, { message, receiver }) => {
+    message: async (ws, { message, receiver, type, messageId }) => {
       console.log(ws.data.query.userId);
       const sender = ws.data.query.userId as number;
 
       try {
         // Guardar el mensaje en la base de datos
-        const msg = await messageService.createMessage(message, sender, receiver);
+
+        let msg: {
+          id: number;
+          content: string;
+          createdAt: Date;
+          edited: boolean;
+          editedAt: Date;
+          deletedFor: number | null;
+          sentBy: number;
+          chatId: number;
+        };
+
+        if (type === 'edit' && messageId) {
+          console.log('editando mensaje');
+          msg = await messageService.editMessage(Number(messageId), message, sender);
+        } else {
+          msg = await messageService.createMessage(message, sender, receiver);
+        }
 
         // Enviar el mensaje al receptor
         ws.publish(`user:${receiver}`, {
-          type: 'chat',
+          type: type || 'chat',
           message,
+          messageId,
           sender,
           id: msg.id,
           timestamp: Date.now()
         });
 
         return {
-          type: 'chat',
+          type: type || 'chat',
           message,
+          messageId,
           sender,
           id: msg.id,
           timestamp: Date.now()

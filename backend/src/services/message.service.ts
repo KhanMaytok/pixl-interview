@@ -33,30 +33,82 @@ export const messageService = {
   },
 
   async getChatMessages(userId: number, otherUserId: number) {
-    // Ordenar los IDs para buscar el chat correcto
     const [firstUserId, secondUserId] = [userId, otherUserId].sort((a, b) => a - b);
 
+    // Primero encontramos el chat
     const chat = await prisma.chat.findFirst({
       where: {
         senderId: firstUserId,
-        receiverId: secondUserId
+        receiverId: secondUserId,
+      }
+    });
+
+    if (!chat) return [];
+
+    // Buscamos si hay una fecha de eliminación para este usuario
+    const deletedChat = await prisma.trash.findFirst({
+      where: {
+        chatId: chat.id,
+        userId: userId
       },
-      include: {
-        messages: {
-          where: {
+      select: {
+        deletedAt: true
+      },
+      orderBy: {
+        deletedAt: 'desc'
+      }
+    });
+
+    // Obtenemos los mensajes con el filtro de fecha si existe
+    const messages = await prisma.message.findMany({
+      where: {
+        chatId: chat.id,
+        AND: [
+          // Filtrar mensajes que no están eliminados para este usuario
+          {
             OR: [
               { deletedFor: null },
               { deletedFor: { not: userId } }
             ]
           },
-          orderBy: {
-            createdAt: 'asc'
-          }
-        }
+          // Solo mostrar mensajes posteriores a la eliminación del chat (si existe)
+          ...(deletedChat ? [{
+            createdAt: {
+              gt: deletedChat.deletedAt
+            }
+          }] : [])
+        ]
+      },
+      orderBy: {
+        createdAt: 'asc'
       }
     });
 
-    return chat?.messages || [];
+    return messages;
+  },
+
+  async editMessage(messageId: number, newContent: string, userId: number) {
+    // Primero verificamos que el usuario sea el dueño del mensaje
+    const message = await prisma.message.findFirst({
+      where: {
+        id: messageId,
+        sentBy: userId // Asegura que solo el que envió puede editar
+      }
+    });
+
+    if (!message) {
+      throw new Error('Message not found or you do not have permission to edit it');
+    }
+
+    // Actualizamos el mensaje
+    return prisma.message.update({
+      where: { id: messageId },
+      data: {
+        content: newContent,
+        edited: true,
+        editedAt: new Date(),
+      }
+    });
   },
 
   async deleteMessage(messageId: number, userId: number) {

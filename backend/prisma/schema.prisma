@@ -40,12 +40,22 @@ model Message {
 model Chat {
   id          Int      @id @default(autoincrement())
   createdAt   DateTime @default(now())
-  // Relaciones
   senderId    Int
   sender      User     @relation("SentChats", fields: [senderId], references: [userId])
   receiverId  Int
   receiver    User     @relation("ReceivedChats", fields: [receiverId], references: [userId])
+  deleted     Trash[]
   messages    Message[]
 
   @@unique([senderId, receiverId])
+}
+
+model Trash {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  deletedAt   DateTime @default(now())
+  chatId      Int
+  chat        Chat     @relation(fields: [chatId], references: [id])
+
+  @@unique([id, userId, chatId])
 }

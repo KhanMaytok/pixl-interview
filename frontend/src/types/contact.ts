@@ -9,6 +9,8 @@ export interface Message {
   sender: number;
   receiver: number;
   timestamp: Date;
+  edited?: boolean;
+  editedAt?: Date;
 }
 
 export interface Chat {

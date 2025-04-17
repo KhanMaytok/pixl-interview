@@ -23,6 +23,8 @@ interface ChatContextType {
   messages: ChatMessage[];
   clearContext: () => void;
   deleteMessage: (messageId: string) => Promise<void>;
+  deleteChat: (otherUserId: number) => Promise<void>;
+  updateMessage: (messageId: string, newContent: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -31,7 +33,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const { data: currentUser, isLoading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [receiver, setReceiver] = useState<Contact | null>(null);
-  const [messageHistory, setMessageHistory] = useState<Record<string, ChatMessage[]>>({});
+  const [, setMessageHistory] = useState<Record<string, ChatMessage[]>>({});
 
   const senderId = currentUser?.userId ? Number(currentUser.userId) : -1;
 
@@ -44,7 +46,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   // Manejar mensajes entrantes
   useEffect(() => {
-    const handleMessage = (data: any) => {
+    const handleMessage = (data: { type: string; message: string; timestamp: string; id?: string; sender?: number; messageId?: string; }) => {
       console.log('Received message:', data);
       try {
         if (data.type === 'system') {
@@ -57,7 +59,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        if (data.type === 'chat') {
+        if (data.type === 'edit' && data.messageId) {
+          setMessages(prev => prev.map(msg =>
+            'id' in msg && msg.id === data.messageId
+              ? { ...msg, message: data.message, edited: true }
+              : msg
+          ));
+          return;
+        }
+
+        if (data.type === 'chat' && data.id) {
           const chatMessage: Message = {
             id: data.id,
             message: data.message,
@@ -121,7 +132,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             message: msg.content,
             sender: msg.sentBy,
             receiver: Number(currentUser.userId),
-            timestamp: msg.createdAt
+            timestamp: msg.createdAt,
+            edited: msg.edited,
+            editedAt: msg.editedAt
           }))
           : [];
 
@@ -161,6 +174,43 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setReceiver(null);
   }, []);
 
+  const deleteChat = useCallback(async (otherUserId: number) => {
+    if (!currentUser?.userId) return;
+
+    try {
+      const response = await client.api.chats.delete({
+        userId: currentUser.userId as number,
+        otherUserId: otherUserId
+      });
+
+      console.log('Chat deleted:', response);
+
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+    }
+  }, [currentUser?.userId]);
+
+  const updateMessage = useCallback(async (messageId: string, newContent: string) => {
+    if (!currentUser?.userId) return;
+
+    try {
+      const response = await client.api.messages.edit.put({
+        messageId: messageId.toString(),
+        content: newContent,
+        userId: currentUser.userId.toString()
+      });
+
+      if (response?.data?.success) {
+        // Update the message locally
+        setMessages(prev => prev.map(msg =>
+          'id' in msg && msg.id === messageId ? { ...msg, message: newContent } : msg
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating message:', error);
+    }
+  }, [currentUser?.userId]);
+
   return (
     <ChatContext.Provider value={ {
       receiver,
@@ -170,7 +220,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       senderId,
       sendMessage,
       deleteMessage,
-      clearContext
+      clearContext,
+      deleteChat,
+      updateMessage
     } }>
       { children }
     </ChatContext.Provider>
