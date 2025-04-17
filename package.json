@@ -1,0 +1,27 @@
+{
+	"name": "pixl-interview",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"workspaces": ["backend/*", "frontend/*"],
+	"scripts": {
+		"dev:backend": "cd backend && bun run --watch src/index.ts",
+		"dev:frontend": "cd frontend && bun run dev",
+		"build:backend": "cd backend && bun build src/index.ts --outdir dist",
+		"start:backend": "cd backend && bun run dist/index.js",
+		"build:frontend": "cd frontend && bun build",
+		"start:frontend": "cd frontend && bun run dev",
+		"dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\""
+	},
+	"dependencies": {
+		"concurrently": "^9.1.2",
+		"cookies-next": "^5.1.0",
+		"elysia": "1.2.25"
+	}
+}
