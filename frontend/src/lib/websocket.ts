@@ -21,7 +21,7 @@ interface WSMessage {
   message: string;
   receiver: number;
   type?: 'chat' | 'edit';
-  messageId?: string;
+  messageId?: number;
 }
 
 class WebSocketManager {
