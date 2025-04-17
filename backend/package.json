@@ -1,0 +1,27 @@
+{
+	"name": "@repo/backend",
+	"version": "1.0.50",
+	"module": "src/index.ts",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "bun run --watch src/index.ts",
+		"build": "tsc"
+	},
+	"dependencies": {
+		"@elysiajs/cors": "^1.2.0",
+		"@elysiajs/jwt": "^1.2.0",
+		"@prisma/client": "^6.6.0",
+		"bcrypt": "^5.1.1",
+		"elysia": "1.2.25"
+	},
+	"devDependencies": {
+		"@types/bcrypt": "^5.0.2",
+		"bun-types": "latest",
+		"prisma": "^6.6.0"
+	},
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"exports": {
+		".": "./src/index.ts"
+	}
+}
