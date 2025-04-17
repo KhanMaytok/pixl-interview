@@ -65,4 +65,4 @@ export const messageService = {
       data: { deletedFor: userId }
     });
   }
-}; 
+};

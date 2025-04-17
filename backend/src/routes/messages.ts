@@ -53,5 +53,25 @@ export const messages = new Elysia({
       userId: t.String(),
       otherUserId: t.String()
     })
+  }).post("/delete", async ({ body }) => {
+    const { messageId, userId } = body;
+
+    try {
+      await messageService.deleteMessage(Number(messageId), Number(userId));
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      return {
+        success: false,
+        error: "Failed to delete message"
+      };
+    }
+  }, {
+    body: t.Object({
+      messageId: t.String(),
+      userId: t.String()
+    })
   });
 

@@ -16,6 +16,7 @@ export const ws = new Elysia({
       type: t.String(),
       sender: t.Optional(t.Number()),
       message: t.String(),
+      id: t.Optional(t.Number()),
       timestamp: t.Number()
     }),
     open: (ws) => {
@@ -34,13 +35,14 @@ export const ws = new Elysia({
 
       try {
         // Guardar el mensaje en la base de datos
-        await messageService.createMessage(message, sender, receiver);
+        const msg = await messageService.createMessage(message, sender, receiver);
 
         // Enviar el mensaje al receptor
         ws.publish(`user:${receiver}`, {
           type: 'chat',
           message,
           sender,
+          id: msg.id,
           timestamp: Date.now()
         });
 
@@ -48,6 +50,7 @@ export const ws = new Elysia({
           type: 'chat',
           message,
           sender,
+          id: msg.id,
           timestamp: Date.now()
         };
 

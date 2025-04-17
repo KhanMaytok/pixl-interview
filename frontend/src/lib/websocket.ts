@@ -1,10 +1,25 @@
+
+import type { EdenWS } from '@elysiajs/eden/treaty';
 import { client } from '~/api/client';
 
 type MessageHandler = (data: any) => void;
 
 class WebSocketManager {
   private static instance: WebSocketManager;
-  private subscription: any = null;
+  private subscription: EdenWS<{
+    body: {
+      message: string;
+      receiver: number;
+    };
+    // biome-ignore lint/complexity/noBannedTypes: <explanation>
+    params: {};
+    query: {
+      userId: number | null;
+    };
+    headers: unknown;
+    // biome-ignore lint/complexity/noBannedTypes: <explanation>
+    response: {};
+  }> | null = null;
   private messageHandlers: Set<MessageHandler> = new Set();
   private userId: number | null = null;
 
@@ -36,8 +51,9 @@ class WebSocketManager {
         },
       });
 
-      this.subscription.subscribe((msg: any) => {
+      this.subscription.subscribe((msg: unknown) => {
         console.log('WebSocket message received:', msg);
+        // biome-ignore lint/complexity/noForEach: <explanation>
         this.messageHandlers.forEach(handler => handler(msg.data));
       });
 

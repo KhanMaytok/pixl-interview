@@ -1,6 +1,6 @@
 'use client';
 
-import { Send } from 'lucide-react';
+import { Edit, Send, Trash } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { Button } from '~/components/ui/button';
@@ -9,7 +9,7 @@ import { useChatContext } from '~/contexts/ChatContext';
 import type { Message } from '~/types/contact';
 
 export function ChatArea() {
-	const { sendMessage, senderId, receiver, messages } = useChatContext();
+	const { sendMessage, senderId, receiver, messages, deleteMessage } = useChatContext();
 	const [message, setMessage] = useState('');
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -75,8 +75,9 @@ export function ChatArea() {
 							return (
 								<div
 									key={ chatMsg.id }
-									className={ `flex ${chatMsg.sender === senderId ? 'justify-end' : 'justify-start'}` }
+									className={ `flex group flex-col space-y-2 ${chatMsg.sender === senderId ? 'items-end' : 'items-start'}` }
 								>
+
 									<div
 										className={ `max-w-[70%] p-3 rounded-lg ${chatMsg.sender === senderId
 											? 'bg-blue-500 text-white'
@@ -94,6 +95,14 @@ export function ChatArea() {
 											}) }
 										</span>
 									</div>
+									{ chatMsg.sender === senderId && <div className='flex-1 gap-2 group-hover:opacity-100 opacity-0 transition-all duration-300 h-0 group-hover:h-auto hidden group-hover:flex'>
+										<Button className='cursor-pointer flex items-center gap-2 bg-red-100/15 border-red-200' variant='outline' size='icon' onClick={ () => deleteMessage(chatMsg.id) }>
+											<Trash className='text-red-500' />
+										</Button>
+										<Button className='cursor-pointer flex items-center gap-2' variant='outline' size='icon'>
+											<Edit />
+										</Button>
+									</div> }
 								</div>
 							);
 						}) }

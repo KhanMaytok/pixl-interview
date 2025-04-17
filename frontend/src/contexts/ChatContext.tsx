@@ -22,6 +22,7 @@ interface ChatContextType {
   sendMessage: (message: string, receiverId: number) => Promise<unknown>;
   messages: ChatMessage[];
   clearContext: () => void;
+  deleteMessage: (messageId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -44,6 +45,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Manejar mensajes entrantes
   useEffect(() => {
     const handleMessage = (data: any) => {
+      console.log('Received message:', data);
       try {
         if (data.type === 'system') {
           const systemMessage: SystemMessage = {
@@ -57,7 +59,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
         if (data.type === 'chat') {
           const chatMessage: Message = {
-            id: data.timestamp.toString(),
+            id: data.id,
             message: data.message,
             sender: data.sender ?? -1,
             receiver: Number(currentUser?.userId),
@@ -134,13 +136,42 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser?.userId, isLoading]);
 
+  const deleteMessage = useCallback(async (messageId: string) => {
+    if (!currentUser?.userId) return;
+
+    try {
+      const response = await client.api.messages.delete.post({
+        messageId: messageId.toString(),
+        userId: currentUser.userId.toString()
+      });
+
+      if (response?.data?.success) {
+        // Actualizar los mensajes localmente
+        setMessages(prev => prev.filter(msg =>
+          'id' in msg && msg.id !== messageId
+        ));
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  }, [currentUser?.userId]);
+
   const clearContext = useCallback(() => {
     setMessages([]);
     setReceiver(null);
   }, []);
 
   return (
-    <ChatContext.Provider value={ { receiver, setReceiver, fetchChatMessages, messages, senderId, sendMessage, clearContext } }>
+    <ChatContext.Provider value={ {
+      receiver,
+      setReceiver,
+      fetchChatMessages,
+      messages,
+      senderId,
+      sendMessage,
+      deleteMessage,
+      clearContext
+    } }>
       { children }
     </ChatContext.Provider>
   );
@@ -152,4 +183,4 @@ export function useChatContext() {
     throw new Error('useChatContext must be used within a ChatProvider');
   }
   return context;
-} 
+}
