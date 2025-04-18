@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pixl Chat - Frontend
 
-## Getting Started
+The frontend implementation of the Pixl Chat application, built with Next.js and modern web technologies.
 
-First, run the development server:
+## Tech Stack
 
+- [Next.js 15](https://nextjs.org/) - React framework
+- [TailwindCSS v4](https://tailwindcss.com/) - Utility-first CSS framework
+- [Eden](https://elysiajs.com/eden/treaty/overview.html#eden-treaty) - Type-safe API calls to Elysia backend
+- [Shadcn UI](https://ui.shadcn.com/) - Accessible and customizable UI components
+- [@Tanstack/form](https://tanstack.com/form/latest/docs/overview) - Form handling for authentication
+- [SWR](https://swr.vercel.app/) - Data fetching and caching
+
+## Features
+
+### Real-time Chat
+- Instant message delivery using WebSocket
+- Message history with timestamps
+- Message editing with edit history
+- Message deletion
+- Chat deletion
+- Optimistic UI updates
+
+### User Interface
+- Modern and responsive design
+- Accessible components from Shadcn UI
+- Loading states and error handling
+- Clean and intuitive chat interface
+
+### Authentication
+- User registration with username
+- User login with credentials
+- Protected chat routes
+- Session management
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── api/          # Eden API client setup
+│   ├── components/
+│   │   ├── chats/    # Chat-specific components
+│   │   ├── forms/    # Forms
+│   │   └── ui/       # Shadcn UI components
+│   ├── contexts/     # React contexts (Auth, Chat)
+│   ├── hooks/        # Custom hooks
+│   ├── lib/          # WebSocket manager, utilities
+│   ├── app/          # Next.js app router pages
+│   └── types/        # TypeScript types
+└── public/           # Static assets
+```
+
+## Development
+
+### Prerequisites
+
+- Bun runtime
+- Node.js 18 or higher
+
+### Setup
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
+```
+
+2. Create a `.env.local` file:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:6969
+```
+
+3. Start the development server:
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### WebSocket Integration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application uses a custom `WebSocketManager` class for real-time features:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```typescript
+interface WSMessage {
+    type: 'chat' | 'edit' | 'system';
+    message: string;
+    receiver: number;
+    messageId?: string;
+    timestamp: string;
+}
+```
 
-## Learn More
+Key features:
+- Automatic reconnection
+- Message type handling
+- Edit message support
+- System messages
 
-To learn more about Next.js, take a look at the following resources:
+### State Management
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The application uses:
+- `ChatContext` for chat state and actions
+- `AuthContext` for user authentication
+- Local state for UI components
+- SWR for API data caching
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Component Architecture
 
-## Deploy on Vercel
+- Modular components for reusability
+- Composition over inheritance
+- Accessible UI elements
+- Responsive design patterns
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Type Safety
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Full TypeScript support
+- Type-safe API calls with Eden
+- Shared types with backend
+- Strict type checking
+
+## Available Scripts
+
+- `bun dev` - Start development server
+- `bun build` - Build for production
+- `bun start` - Start production server
+- `bun lint` - Run ESLint
+- `bun type-check` - Run TypeScript checks
