@@ -28,12 +28,11 @@ export function Form() {
           console.log('Registration successful, setting token:', data.data.token);
           setAuthToken(data.data.token);
 
-          // Verificar que el token se haya establecido correctamente
           const savedToken = getCookie('token', { httpOnly: false });
           console.log('Token saved, verification:', savedToken);
 
           if (savedToken) {
-            router.push('/'); // '/' is the chats page
+            router.push('/chats');
           } else {
             setError('Failed to save authentication token');
           }

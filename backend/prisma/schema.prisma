@@ -16,46 +16,46 @@ datasource db {
 
 model User {
   userId        Int      @id @default(autoincrement()) @map("id")
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  username      String   @unique
+  password      String
+  createdAt     DateTime @default(now())
   // Relaciones
-  sentChats     Chat[] @relation("SentChats")
-  receivedChats Chat[] @relation("ReceivedChats")
+  sentChats     Chat[]   @relation("SentChats")
+  receivedChats Chat[]   @relation("ReceivedChats")
 }
 
 model Message {
-  id          Int      @id @default(autoincrement())
-  content     String
-  createdAt   DateTime @default(now())
-  edited      Boolean  @default(false)
-  editedAt    DateTime @updatedAt
-  deletedFor  Int?     // ID del usuario para quien está eliminado el mensaje
-  sentBy    Int
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  edited     Boolean  @default(false)
+  editedAt   DateTime @updatedAt
+  deletedFor Int? // ID del usuario para quien está eliminado el mensaje
+  sentBy     Int
   // Relaciones
-  chatId      Int
-  chat        Chat     @relation(fields: [chatId], references: [id])
+  chatId     Int
+  chat       Chat     @relation(fields: [chatId], references: [id])
 }
 
 model Chat {
-  id          Int      @id @default(autoincrement())
-  createdAt   DateTime @default(now())
-  senderId    Int
-  sender      User     @relation("SentChats", fields: [senderId], references: [userId])
-  receiverId  Int
-  receiver    User     @relation("ReceivedChats", fields: [receiverId], references: [userId])
-  deleted     Trash[]
-  messages    Message[]
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime  @default(now())
+  senderId   Int
+  sender     User      @relation("SentChats", fields: [senderId], references: [userId])
+  receiverId Int
+  receiver   User      @relation("ReceivedChats", fields: [receiverId], references: [userId])
+  deleted    Trash[]
+  messages   Message[]
 
   @@unique([senderId, receiverId])
 }
 
 model Trash {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  deletedAt   DateTime @default(now())
-  chatId      Int
-  chat        Chat     @relation(fields: [chatId], references: [id])
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  deletedAt DateTime @default(now())
+  chatId    Int
+  chat      Chat     @relation(fields: [chatId], references: [id])
 
   @@unique([id, userId, chatId])
 }

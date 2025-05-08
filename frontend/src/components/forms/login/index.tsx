@@ -22,6 +22,7 @@ export function Form() {
       const { email, password } = form.value;
       const { data, error } = await client.api.auth.login.post({ username: email, password: password });
       console.log(data);
+      console.log(error, data?.message);
       if (error || !data.success) {
         setError(error?.value.message ?? data?.message ?? 'Unknown error');
       } else {
@@ -36,7 +37,7 @@ export function Form() {
           console.log('Token saved, verification:', savedToken);
 
           if (savedToken) {
-            router.push('/'); // '/' is the chats page
+            router.push('/chats');
           } else {
             setError('Failed to save authentication token');
           }
